@@ -39,7 +39,7 @@
         overflow: hidden;
         isolation: isolate;
         background: #050607;
-        touch-action: manipulation;
+        touch-action: none;
       }
 
       @supports (height: 100dvh) {
@@ -443,6 +443,7 @@
       let audioGraphReady = false;
       let lastTouchTime = 0;
       let spotlightRadius = SPOTLIGHT_R;
+      let touchPointerId = null;
       let rafId = 0;
 
       function readVolume(key, fallback) {
@@ -620,13 +621,66 @@
         maskCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
       }
 
-      function setPointerPosition(event) {
+      function releaseTouchCapture(pointerId) {
+        if (!stage.releasePointerCapture) {
+          return;
+        }
+
+        try {
+          if (!stage.hasPointerCapture || stage.hasPointerCapture(pointerId)) {
+            stage.releasePointerCapture(pointerId);
+          }
+        } catch (error) {}
+      }
+
+      function setMouseRevealPosition(event) {
         if (isInteractiveTarget(event.target)) {
           return;
         }
 
-        spotlightRadius = event.pointerType === "touch" ? TOUCH_SPOTLIGHT_R : SPOTLIGHT_R;
-        setRevealPosition(event.clientX, event.clientY, event.pointerType === "touch");
+        spotlightRadius = SPOTLIGHT_R;
+        setRevealPosition(event.clientX, event.clientY, false);
+      }
+
+      function beginPointerReveal(event) {
+        if (event.pointerType !== "touch") {
+          setMouseRevealPosition(event);
+          return;
+        }
+
+        if (isInteractiveTarget(event.target)) {
+          return;
+        }
+
+        lastTouchTime = Date.now();
+        touchPointerId = event.pointerId;
+        if (stage.setPointerCapture) {
+          stage.setPointerCapture(event.pointerId);
+        }
+
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+
+        setTouchRevealPosition(event.clientX, event.clientY);
+      }
+
+      function movePointerReveal(event) {
+        if (event.pointerType !== "touch") {
+          setMouseRevealPosition(event);
+          return;
+        }
+
+        if (event.pointerId !== touchPointerId) {
+          return;
+        }
+
+        lastTouchTime = Date.now();
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+
+        setTouchRevealPosition(event.clientX, event.clientY);
       }
 
       function setTouchPosition(event) {
@@ -651,8 +705,12 @@
       }
 
       function endPointerReveal(event) {
-        if (event.pointerType === "touch") {
+        if (event.pointerType === "touch" && (touchPointerId === null || event.pointerId === touchPointerId)) {
           lastTouchTime = Date.now();
+          if (touchPointerId !== null) {
+            releaseTouchCapture(event.pointerId);
+          }
+          touchPointerId = null;
           hideReveal();
         }
       }
@@ -714,8 +772,8 @@
       armorVideo.addEventListener("pause", () => trainingVideo.pause());
       trainingVideo.addEventListener("loadedmetadata", () => syncTrainingVideo(true));
 
-      window.addEventListener("pointermove", setPointerPosition, { passive: true });
-      window.addEventListener("pointerdown", setPointerPosition, { passive: true });
+      window.addEventListener("pointermove", movePointerReveal, { passive: false });
+      stage.addEventListener("pointerdown", beginPointerReveal, { passive: false });
       window.addEventListener("pointerup", endPointerReveal);
       window.addEventListener("pointercancel", endPointerReveal);
       window.addEventListener("pointerdown", playBackgroundAudio);
