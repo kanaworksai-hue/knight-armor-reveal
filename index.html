@@ -39,7 +39,7 @@
         overflow: hidden;
         isolation: isolate;
         background: #050607;
-        touch-action: none;
+        touch-action: manipulation;
       }
 
       @supports (height: 100dvh) {
@@ -431,28 +431,88 @@
 
       const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       const smooth = { x: mouse.x, y: mouse.y };
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       let active = false;
       let audioStarted = false;
+      let audioContext = null;
+      let musicGain = null;
+      let ambienceGain = null;
+      let audioGraphReady = false;
       let rafId = 0;
 
       function readVolume(key, fallback) {
-        const stored = Number.parseInt(window.localStorage.getItem(key), 10);
-        return Number.isFinite(stored) ? Math.min(100, Math.max(0, stored)) : fallback;
+        try {
+          const stored = Number.parseInt(window.localStorage.getItem(key), 10);
+          return Number.isFinite(stored) ? Math.min(100, Math.max(0, stored)) : fallback;
+        } catch (error) {
+          return fallback;
+        }
       }
 
-      function syncVolume(input, output, audio, key) {
+      function volumeLevel(input) {
         const value = Number.parseInt(input.value, 10);
-        const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
-        audio.volume = safeValue / 100;
+        return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) / 100 : 0;
+      }
+
+      function setGain(gain, level) {
+        if (!audioContext || !gain) {
+          return;
+        }
+
+        gain.gain.setTargetAtTime(level, audioContext.currentTime, 0.015);
+      }
+
+      function applyAudioLevels() {
+        const musicLevel = volumeLevel(musicVolume);
+        const ambienceLevel = volumeLevel(ambienceVolume);
+
+        if (audioGraphReady) {
+          backgroundMusic.volume = 1;
+          ambienceTrack.volume = 1;
+          setGain(musicGain, musicLevel);
+          setGain(ambienceGain, ambienceLevel);
+          return;
+        }
+
+        backgroundMusic.volume = musicLevel;
+        ambienceTrack.volume = ambienceLevel;
+      }
+
+      function syncVolume(input, output, key) {
+        const safeValue = Math.round(volumeLevel(input) * 100);
         output.value = `${safeValue}%`;
-        window.localStorage.setItem(key, String(safeValue));
+        try {
+          window.localStorage.setItem(key, String(safeValue));
+        } catch (error) {}
+        applyAudioLevels();
       }
 
       function setupVolumes() {
         musicVolume.value = readVolume("musicVolume", 80);
         ambienceVolume.value = readVolume("ambienceVolume", 100);
-        syncVolume(musicVolume, musicValue, backgroundMusic, "musicVolume");
-        syncVolume(ambienceVolume, ambienceValue, ambienceTrack, "ambienceVolume");
+        syncVolume(musicVolume, musicValue, "musicVolume");
+        syncVolume(ambienceVolume, ambienceValue, "ambienceVolume");
+      }
+
+      function setupAudioGraph() {
+        if (audioGraphReady) {
+          return true;
+        }
+
+        if (!AudioContextClass) {
+          return false;
+        }
+
+        audioContext = new AudioContextClass();
+        const musicSource = audioContext.createMediaElementSource(backgroundMusic);
+        const ambienceSource = audioContext.createMediaElementSource(ambienceTrack);
+        musicGain = audioContext.createGain();
+        ambienceGain = audioContext.createGain();
+        musicSource.connect(musicGain).connect(audioContext.destination);
+        ambienceSource.connect(ambienceGain).connect(audioContext.destination);
+        audioGraphReady = true;
+        applyAudioLevels();
+        return true;
       }
 
       function resizeCanvas() {
@@ -498,6 +558,12 @@
         }
 
         try {
+          setupAudioGraph();
+          if (audioContext && audioContext.state !== "running") {
+            await audioContext.resume();
+          }
+
+          applyAudioLevels();
           await Promise.all([backgroundMusic.play(), ambienceTrack.play()]);
           audioStarted = true;
         } catch (error) {
@@ -505,11 +571,37 @@
         }
       }
 
-      function setPointerPosition(event) {
+      function isInteractiveTarget(target) {
+        return target instanceof Element && Boolean(target.closest(".sound-panel, .brand-link, .social-link"));
+      }
+
+      function setRevealPosition(x, y) {
         active = true;
         stage.classList.add("is-active");
-        mouse.x = event.clientX;
-        mouse.y = event.clientY;
+        mouse.x = x;
+        mouse.y = y;
+      }
+
+      function setPointerPosition(event) {
+        if (isInteractiveTarget(event.target)) {
+          return;
+        }
+
+        setRevealPosition(event.clientX, event.clientY);
+      }
+
+      function setTouchPosition(event) {
+        if (isInteractiveTarget(event.target)) {
+          return;
+        }
+
+        const touch = event.touches[0] || event.changedTouches[0];
+        if (!touch) {
+          return;
+        }
+
+        event.preventDefault();
+        setRevealPosition(touch.clientX, touch.clientY);
       }
 
       function applyRevealMask(x, y) {
@@ -561,15 +653,18 @@
       window.addEventListener("pointermove", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", playBackgroundAudio);
+      stage.addEventListener("touchstart", setTouchPosition, { passive: false });
+      stage.addEventListener("touchmove", setTouchPosition, { passive: false });
+      stage.addEventListener("touchend", playBackgroundAudio);
       window.addEventListener("resize", resizeCanvas);
       window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
 
       musicVolume.addEventListener("input", () => {
-        syncVolume(musicVolume, musicValue, backgroundMusic, "musicVolume");
+        syncVolume(musicVolume, musicValue, "musicVolume");
         playBackgroundAudio();
       });
       ambienceVolume.addEventListener("input", () => {
-        syncVolume(ambienceVolume, ambienceValue, ambienceTrack, "ambienceVolume");
+        syncVolume(ambienceVolume, ambienceValue, "ambienceVolume");
         playBackgroundAudio();
       });
 
