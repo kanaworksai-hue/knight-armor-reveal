@@ -438,6 +438,7 @@
       let musicGain = null;
       let ambienceGain = null;
       let audioGraphReady = false;
+      let lastTouchTime = 0;
       let rafId = 0;
 
       function readVolume(key, fallback) {
@@ -604,6 +605,12 @@
         }
       }
 
+      function hideReveal() {
+        active = false;
+        stage.classList.remove("is-active");
+        maskCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+
       function setPointerPosition(event) {
         if (isInteractiveTarget(event.target)) {
           return;
@@ -617,6 +624,7 @@
           return;
         }
 
+        lastTouchTime = Date.now();
         const touch = event.touches[0] || event.changedTouches[0];
         if (!touch) {
           return;
@@ -626,7 +634,24 @@
         setRevealPosition(touch.clientX, touch.clientY, true);
       }
 
+      function endTouchReveal(event) {
+        lastTouchTime = Date.now();
+        hideReveal();
+        playBackgroundAudio();
+      }
+
+      function endPointerReveal(event) {
+        if (event.pointerType === "touch") {
+          lastTouchTime = Date.now();
+          hideReveal();
+        }
+      }
+
       function setClickPosition(event) {
+        if (Date.now() - lastTouchTime < 700) {
+          return;
+        }
+
         if (isInteractiveTarget(event.target)) {
           return;
         }
@@ -679,11 +704,14 @@
 
       window.addEventListener("pointermove", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", setPointerPosition, { passive: true });
+      window.addEventListener("pointerup", endPointerReveal);
+      window.addEventListener("pointercancel", endPointerReveal);
       window.addEventListener("pointerdown", playBackgroundAudio);
       window.addEventListener("click", setClickPosition);
       stage.addEventListener("touchstart", setTouchPosition, { passive: false });
       stage.addEventListener("touchmove", setTouchPosition, { passive: false });
-      stage.addEventListener("touchend", playBackgroundAudio);
+      stage.addEventListener("touchend", endTouchReveal);
+      stage.addEventListener("touchcancel", endTouchReveal);
       window.addEventListener("resize", resizeCanvas);
       window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
 
