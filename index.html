@@ -575,11 +575,33 @@
         return target instanceof Element && Boolean(target.closest(".sound-panel, .brand-link, .social-link"));
       }
 
-      function setRevealPosition(x, y) {
+      function clampPoint(x, y) {
+        return {
+          x: Math.min(window.innerWidth, Math.max(0, x)),
+          y: Math.min(window.innerHeight, Math.max(0, y)),
+        };
+      }
+
+      function updateCursorState(x, y) {
+        stage.style.setProperty("--cursor-x", `${(x / window.innerWidth) * 100}%`);
+        stage.style.setProperty("--cursor-y", `${(y / window.innerHeight) * 100}%`);
+        stage.style.setProperty("--cursor-x-px", `${x}px`);
+        stage.style.setProperty("--cursor-y-px", `${y}px`);
+      }
+
+      function setRevealPosition(x, y, snap = false) {
+        const point = clampPoint(x, y);
         active = true;
         stage.classList.add("is-active");
-        mouse.x = x;
-        mouse.y = y;
+        mouse.x = point.x;
+        mouse.y = point.y;
+
+        if (snap) {
+          smooth.x = point.x;
+          smooth.y = point.y;
+          updateCursorState(point.x, point.y);
+          applyRevealMask(point.x, point.y);
+        }
       }
 
       function setPointerPosition(event) {
@@ -587,7 +609,7 @@
           return;
         }
 
-        setRevealPosition(event.clientX, event.clientY);
+        setRevealPosition(event.clientX, event.clientY, event.pointerType === "touch");
       }
 
       function setTouchPosition(event) {
@@ -601,7 +623,15 @@
         }
 
         event.preventDefault();
-        setRevealPosition(touch.clientX, touch.clientY);
+        setRevealPosition(touch.clientX, touch.clientY, true);
+      }
+
+      function setClickPosition(event) {
+        if (isInteractiveTarget(event.target)) {
+          return;
+        }
+
+        setRevealPosition(event.clientX, event.clientY, true);
       }
 
       function applyRevealMask(x, y) {
@@ -631,10 +661,7 @@
         smooth.x += (mouse.x - smooth.x) * EASE;
         smooth.y += (mouse.y - smooth.y) * EASE;
 
-        stage.style.setProperty("--cursor-x", `${(smooth.x / window.innerWidth) * 100}%`);
-        stage.style.setProperty("--cursor-y", `${(smooth.y / window.innerHeight) * 100}%`);
-        stage.style.setProperty("--cursor-x-px", `${smooth.x}px`);
-        stage.style.setProperty("--cursor-y-px", `${smooth.y}px`);
+        updateCursorState(smooth.x, smooth.y);
 
         if (active) {
           applyRevealMask(smooth.x, smooth.y);
@@ -653,6 +680,7 @@
       window.addEventListener("pointermove", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", playBackgroundAudio);
+      window.addEventListener("click", setClickPosition);
       stage.addEventListener("touchstart", setTouchPosition, { passive: false });
       stage.addEventListener("touchmove", setTouchPosition, { passive: false });
       stage.addEventListener("touchend", playBackgroundAudio);
