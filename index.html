@@ -106,6 +106,133 @@
         opacity: 1;
       }
 
+      .brand-link,
+      .social-link,
+      .sound-panel {
+        position: absolute;
+        z-index: 6;
+        pointer-events: auto;
+        cursor: auto;
+      }
+
+      .brand-link {
+        top: clamp(14px, 2vw, 24px);
+        left: clamp(14px, 2vw, 24px);
+        display: grid;
+        place-items: center;
+        width: clamp(58px, 7vw, 82px);
+        height: clamp(58px, 7vw, 82px);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(4, 7, 10, 0.34);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(14px);
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .brand-link:hover,
+      .social-link:hover {
+        background: rgba(8, 13, 18, 0.58);
+        border-color: rgba(255, 223, 171, 0.34);
+        transform: translateY(-1px);
+      }
+
+      .brand-logo {
+        display: block;
+        width: 76%;
+        height: 76%;
+        object-fit: contain;
+      }
+
+      .social-link {
+        top: clamp(14px, 2vw, 24px);
+        right: clamp(14px, 2vw, 24px);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 9px 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(4, 7, 10, 0.38);
+        color: rgba(255, 255, 255, 0.92);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-decoration: none;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(14px);
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .x-mark {
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #050607;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .sound-panel {
+        left: 50%;
+        bottom: clamp(16px, 3vw, 28px);
+        display: grid;
+        grid-template-columns: minmax(160px, 220px) minmax(160px, 220px);
+        gap: 16px;
+        width: min(calc(100vw - 32px), 492px);
+        padding: 13px 15px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(4, 7, 10, 0.44);
+        box-shadow: 0 20px 54px rgba(0, 0, 0, 0.32);
+        backdrop-filter: blur(16px);
+        transform: translateX(-50%);
+      }
+
+      .volume-control {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        color: rgba(255, 255, 255, 0.9);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .volume-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .volume-label output {
+        color: rgba(255, 223, 171, 0.92);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .volume-slider {
+        width: 100%;
+        height: 22px;
+        margin: 0;
+        accent-color: #ffd36f;
+        cursor: auto;
+      }
+
       .mask-canvas {
         display: none;
       }
@@ -117,6 +244,25 @@
 
         .cursor-ring {
           display: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .social-link {
+          max-width: calc(100vw - 104px);
+          overflow: hidden;
+        }
+
+        .social-link span:last-child {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .sound-panel {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding: 12px 14px;
         }
       }
     </style>
@@ -132,6 +278,33 @@
       <audio id="backgroundMusic" loop preload="auto">
         <source src="./background.mp3" type="audio/mpeg" />
       </audio>
+      <audio id="ambienceTrack" loop preload="auto">
+        <source src="./ambience.mp3" type="audio/mpeg" />
+      </audio>
+
+      <a class="brand-link" href="https://x.com/KanaWorks_AI" target="_blank" rel="noopener noreferrer" aria-label="KanaWorks AI on X">
+        <img class="brand-logo" src="./brand-logo.png" alt="KanaWorks AI" />
+      </a>
+      <a class="social-link" href="https://x.com/KanaWorks_AI" target="_blank" rel="noopener noreferrer" aria-label="Follow KanaWorks AI on X">
+        <span class="x-mark">X</span>
+        <span>@KanaWorks_AI</span>
+      </a>
+      <div class="sound-panel" aria-label="Audio controls">
+        <label class="volume-control">
+          <span class="volume-label">
+            <span>Music</span>
+            <output id="musicValue">80%</output>
+          </span>
+          <input id="musicVolume" class="volume-slider" type="range" min="0" max="100" value="80" aria-label="Music volume" />
+        </label>
+        <label class="volume-control">
+          <span class="volume-label">
+            <span>Ambience</span>
+            <output id="ambienceValue">100%</output>
+          </span>
+          <input id="ambienceVolume" class="volume-slider" type="range" min="0" max="100" value="100" aria-label="Ambience volume" />
+        </label>
+      </div>
 
       <div class="grade" aria-hidden="true"></div>
       <div class="vignette" aria-hidden="true"></div>
@@ -147,14 +320,39 @@
       const armorVideo = document.querySelector("#armorVideo");
       const trainingVideo = document.querySelector("#trainingVideo");
       const backgroundMusic = document.querySelector("#backgroundMusic");
+      const ambienceTrack = document.querySelector("#ambienceTrack");
+      const musicVolume = document.querySelector("#musicVolume");
+      const ambienceVolume = document.querySelector("#ambienceVolume");
+      const musicValue = document.querySelector("#musicValue");
+      const ambienceValue = document.querySelector("#ambienceValue");
       const maskCanvas = document.querySelector(".mask-canvas");
       const maskCtx = maskCanvas.getContext("2d");
 
       const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       const smooth = { x: mouse.x, y: mouse.y };
       let active = false;
-      let musicStarted = false;
+      let audioStarted = false;
       let rafId = 0;
+
+      function readVolume(key, fallback) {
+        const stored = Number.parseInt(window.localStorage.getItem(key), 10);
+        return Number.isFinite(stored) ? Math.min(100, Math.max(0, stored)) : fallback;
+      }
+
+      function syncVolume(input, output, audio, key) {
+        const value = Number.parseInt(input.value, 10);
+        const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
+        audio.volume = safeValue / 100;
+        output.value = `${safeValue}%`;
+        window.localStorage.setItem(key, String(safeValue));
+      }
+
+      function setupVolumes() {
+        musicVolume.value = readVolume("musicVolume", 80);
+        ambienceVolume.value = readVolume("ambienceVolume", 100);
+        syncVolume(musicVolume, musicValue, backgroundMusic, "musicVolume");
+        syncVolume(ambienceVolume, ambienceValue, ambienceTrack, "ambienceVolume");
+      }
 
       function resizeCanvas() {
         maskCanvas.width = window.innerWidth;
@@ -193,17 +391,16 @@
         }
       }
 
-      async function playBackgroundMusic() {
-        if (musicStarted) {
+      async function playBackgroundAudio() {
+        if (audioStarted) {
           return;
         }
 
         try {
-          backgroundMusic.volume = 1;
-          await backgroundMusic.play();
-          musicStarted = true;
+          await Promise.all([backgroundMusic.play(), ambienceTrack.play()]);
+          audioStarted = true;
         } catch (error) {
-          musicStarted = false;
+          audioStarted = false;
         }
       }
 
@@ -262,11 +459,21 @@
 
       window.addEventListener("pointermove", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", setPointerPosition, { passive: true });
-      window.addEventListener("pointerdown", playBackgroundMusic);
+      window.addEventListener("pointerdown", playBackgroundAudio);
       window.addEventListener("resize", resizeCanvas);
       window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
 
+      musicVolume.addEventListener("input", () => {
+        syncVolume(musicVolume, musicValue, backgroundMusic, "musicVolume");
+        playBackgroundAudio();
+      });
+      ambienceVolume.addEventListener("input", () => {
+        syncVolume(ambienceVolume, ambienceValue, ambienceTrack, "ambienceVolume");
+        playBackgroundAudio();
+      });
+
       resizeCanvas();
+      setupVolumes();
       playVideos();
       rafId = requestAnimationFrame(animate);
     </script>

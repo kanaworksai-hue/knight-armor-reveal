@@ -10,6 +10,8 @@ The page is a static HTML/CSS/JavaScript build designed for GitHub Pages.
 - `armor.mp4` - base video layer
 - `training.mp4` - masked reveal video layer
 - `background.mp3` - looped background music
+- `ambience.mp3` - looped ambient sound effect
+- `brand-logo.png` - KanaWorks AI logo
 - `poster.jpg` - loading poster image
 
 ## Local Preview
