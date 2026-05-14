@@ -394,16 +394,16 @@
         <label class="volume-control">
           <span class="volume-label">
             <span>Music</span>
-            <output id="musicValue">80%</output>
+            <output id="musicValue">30%</output>
           </span>
-          <input id="musicVolume" class="volume-slider" type="range" min="0" max="100" value="80" aria-label="Music volume" />
+          <input id="musicVolume" class="volume-slider" type="range" min="0" max="100" value="30" aria-label="Music volume" />
         </label>
         <label class="volume-control">
           <span class="volume-label">
             <span>Ambience</span>
-            <output id="ambienceValue">100%</output>
+            <output id="ambienceValue">80%</output>
           </span>
-          <input id="ambienceVolume" class="volume-slider" type="range" min="0" max="100" value="100" aria-label="Ambience volume" />
+          <input id="ambienceVolume" class="volume-slider" type="range" min="0" max="100" value="80" aria-label="Ambience volume" />
         </label>
       </div>
 
@@ -415,7 +415,10 @@
 
     <script>
       const SPOTLIGHT_R = 310;
+      const TOUCH_SPOTLIGHT_R = 96;
       const EASE = 0.16;
+      const MUSIC_VOLUME_KEY = "musicVolumeV2";
+      const AMBIENCE_VOLUME_KEY = "ambienceVolumeV2";
 
       const stage = document.querySelector(".stage");
       const armorVideo = document.querySelector("#armorVideo");
@@ -439,6 +442,7 @@
       let ambienceGain = null;
       let audioGraphReady = false;
       let lastTouchTime = 0;
+      let spotlightRadius = SPOTLIGHT_R;
       let rafId = 0;
 
       function readVolume(key, fallback) {
@@ -489,10 +493,10 @@
       }
 
       function setupVolumes() {
-        musicVolume.value = readVolume("musicVolume", 80);
-        ambienceVolume.value = readVolume("ambienceVolume", 100);
-        syncVolume(musicVolume, musicValue, "musicVolume");
-        syncVolume(ambienceVolume, ambienceValue, "ambienceVolume");
+        musicVolume.value = readVolume(MUSIC_VOLUME_KEY, 30);
+        ambienceVolume.value = readVolume(AMBIENCE_VOLUME_KEY, 80);
+        syncVolume(musicVolume, musicValue, MUSIC_VOLUME_KEY);
+        syncVolume(ambienceVolume, ambienceValue, AMBIENCE_VOLUME_KEY);
       }
 
       function setupAudioGraph() {
@@ -605,6 +609,11 @@
         }
       }
 
+      function setTouchRevealPosition(x, y) {
+        spotlightRadius = TOUCH_SPOTLIGHT_R;
+        setRevealPosition(x, y, true);
+      }
+
       function hideReveal() {
         active = false;
         stage.classList.remove("is-active");
@@ -616,6 +625,7 @@
           return;
         }
 
+        spotlightRadius = event.pointerType === "touch" ? TOUCH_SPOTLIGHT_R : SPOTLIGHT_R;
         setRevealPosition(event.clientX, event.clientY, event.pointerType === "touch");
       }
 
@@ -631,7 +641,7 @@
         }
 
         event.preventDefault();
-        setRevealPosition(touch.clientX, touch.clientY, true);
+        setTouchRevealPosition(touch.clientX, touch.clientY);
       }
 
       function endTouchReveal(event) {
@@ -656,13 +666,15 @@
           return;
         }
 
+        spotlightRadius = SPOTLIGHT_R;
         setRevealPosition(event.clientX, event.clientY, true);
       }
 
       function applyRevealMask(x, y) {
         maskCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-        const gradient = maskCtx.createRadialGradient(x, y, 0, x, y, SPOTLIGHT_R);
+        const radius = spotlightRadius;
+        const gradient = maskCtx.createRadialGradient(x, y, 0, x, y, radius);
         gradient.addColorStop(0, "rgba(255,255,255,1)");
         gradient.addColorStop(0.38, "rgba(255,255,255,1)");
         gradient.addColorStop(0.58, "rgba(255,255,255,0.82)");
@@ -671,7 +683,7 @@
         gradient.addColorStop(1, "rgba(255,255,255,0)");
 
         maskCtx.beginPath();
-        maskCtx.arc(x, y, SPOTLIGHT_R, 0, Math.PI * 2);
+        maskCtx.arc(x, y, radius, 0, Math.PI * 2);
         maskCtx.fillStyle = gradient;
         maskCtx.fill();
 
@@ -716,11 +728,11 @@
       window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
 
       musicVolume.addEventListener("input", () => {
-        syncVolume(musicVolume, musicValue, "musicVolume");
+        syncVolume(musicVolume, musicValue, MUSIC_VOLUME_KEY);
         playBackgroundAudio();
       });
       ambienceVolume.addEventListener("input", () => {
-        syncVolume(ambienceVolume, ambienceValue, "ambienceVolume");
+        syncVolume(ambienceVolume, ambienceValue, AMBIENCE_VOLUME_KEY);
         playBackgroundAudio();
       });
 
