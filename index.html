@@ -129,6 +129,9 @@
       <video id="trainingVideo" class="scene-video training-video" autoplay muted loop playsinline preload="auto">
         <source src="./training.mp4" type="video/mp4" />
       </video>
+      <audio id="backgroundMusic" loop preload="auto">
+        <source src="./background.mp3" type="audio/mpeg" />
+      </audio>
 
       <div class="grade" aria-hidden="true"></div>
       <div class="vignette" aria-hidden="true"></div>
@@ -143,12 +146,14 @@
       const stage = document.querySelector(".stage");
       const armorVideo = document.querySelector("#armorVideo");
       const trainingVideo = document.querySelector("#trainingVideo");
+      const backgroundMusic = document.querySelector("#backgroundMusic");
       const maskCanvas = document.querySelector(".mask-canvas");
       const maskCtx = maskCanvas.getContext("2d");
 
       const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       const smooth = { x: mouse.x, y: mouse.y };
       let active = false;
+      let musicStarted = false;
       let rafId = 0;
 
       function resizeCanvas() {
@@ -185,6 +190,20 @@
             },
             { once: true },
           );
+        }
+      }
+
+      async function playBackgroundMusic() {
+        if (musicStarted) {
+          return;
+        }
+
+        try {
+          backgroundMusic.volume = 1;
+          await backgroundMusic.play();
+          musicStarted = true;
+        } catch (error) {
+          musicStarted = false;
         }
       }
 
@@ -243,6 +262,7 @@
 
       window.addEventListener("pointermove", setPointerPosition, { passive: true });
       window.addEventListener("pointerdown", setPointerPosition, { passive: true });
+      window.addEventListener("pointerdown", playBackgroundMusic);
       window.addEventListener("resize", resizeCanvas);
       window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
 

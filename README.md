@@ -9,6 +9,7 @@ The page is a static HTML/CSS/JavaScript build designed for GitHub Pages.
 - `index.html` - interactive page and animation logic
 - `armor.mp4` - base video layer
 - `training.mp4` - masked reveal video layer
+- `background.mp3` - looped background music
 - `poster.jpg` - loading poster image
 
 ## Local Preview
